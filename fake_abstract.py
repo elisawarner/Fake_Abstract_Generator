@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[49]:
 
 
 import requests
@@ -9,6 +9,7 @@ import csv
 import re
 import flask
 import json
+import pickle
 import numpy as np
 import matplotlib as mpl
 mpl.use('TkAgg')
@@ -25,9 +26,10 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 from flask import Flask, render_template, request
 from flask_script import Manager
+from tqdm import tqdm
 
 
-# In[7]:
+# In[50]:
 
 
 ################ CACHING & DATA RETRIEVAL ###################
@@ -35,6 +37,7 @@ from flask_script import Manager
 # Constants
 # -----------------------------------------------------------------------------
 CACHE_FNAME = 'cache_file.json'
+MODEL_FNAME = 'markov_model.pkl'
 DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 DEBUG = False
 # MAKE SURE TO DROP TABLE EVEN WITHOUT DEBUG, BEFORE YOU RERUN IT
@@ -49,7 +52,6 @@ try:
         CACHE_DICTION = json.loads(cache_json)
 except:
     CACHE_DICTION = {}
-
 
 # CITE: Anand Doshi, nytimes.py
 def has_cache_expired(timestamp_str, expire_in_days): # BUG 1
@@ -113,8 +115,21 @@ def set_in_cache(url, params_d, html, expire_in_days):
         cache_json = json.dumps(CACHE_DICTION)
         cache_file.write(cache_json)
 
+def save_model_cache(order, model, expire_in_days):
+    """Add order to the cache dictionary, and save the whole dictionary to a file as json"""
+    cache_key = str(order)
+    
+    markov_dict[cache_key] = {
+        'model': model,
+        'timestamp': datetime.now().strftime(DATETIME_FORMAT),
+        'expire_in_days': expire_in_days
+    }
+    
+    with open(MODEL_FNAME,"wb") as cache_file:
+        pickle.dump(markov_dict,cache_file)
+
 # CITE: Anand Doshi, nytimes.py
-def get_html_from_url(url, params_d, expire_in_days=7): #Added params_d
+def get_html_from_url(url, params_d, expire_in_days=365): #Added params_d
     """Check in cache, if not found, load html, save in cache and then return that html"""
     # check in cache
     html = get_from_cache(url, params_d)
@@ -123,8 +138,8 @@ def get_html_from_url(url, params_d, expire_in_days=7): #Added params_d
         if DEBUG:
             print('Loading from cache: {0}'.format(url))
     else:
- #       if DEBUG:
-        #print('Fetching a fresh copy: {0}'.format(url))
+        if DEBUG:
+            print('Fetching a fresh copy: {0}'.format(url))
  #       print()
 
         # fetch fresh
@@ -166,7 +181,7 @@ def find_abstract(baseurl):
 ######################## END CACHING #############################################
 
 
-# In[8]:
+# In[51]:
 
 
 import random
@@ -239,50 +254,63 @@ def generate_random_text(markov_model):
     return ' '.join(sentence)
 
 
-# In[9]:
+# In[52]:
 
 
 baseurl = "http://openaccess.thecvf.com/"
-subscript = "CVPR2018.py"
-t = search_cvpr(baseurl + subscript)
+years = [str(2010 + x) for x in range(5,10)]
+result_dict = {}
+
+for year in years:
+    subscript = "CVPR%s.py" % year
+    result_dict[year] = search_cvpr(baseurl + subscript)
 
 
-# In[10]:
+# In[71]:
 
 
 def markov_wrapper(order):
-    markov_model = dict()
-
-    for idx,dt in enumerate(t):
-        a = dt.find('a')
-        link = a.get('href')
+    # -----------------------------------------------------------------------------
+    # Load model file
+    # -----------------------------------------------------------------------------
+    try:
+        with open(MODEL_FNAME, 'rb') as cache_file:
+            markov_dict = pickle.load(cache_file)
+            markov_model = markov_dict[str(order)]['model']
+        print('Using Cached Data')
+    except:
+        print('Creating New Dictionary')
+        markov_model = {}
+        
+        for year in tqdm(list(result_dict.keys())):
+            t =result_dict[year]
+            for idx,dt in enumerate(t):
+                try:
+                    a = dt.find('a')
+                    link = a.get('href')
     
-        baseurl2 = baseurl + link
-        print(baseurl2)
+                    baseurl2 = baseurl + link
+                    #if DEBUG:
+                        #print(baseurl2)
     
-        find_div = 'abstract'#,{"class":"abstract"}
-        d = find_abstract(baseurl2)
-        abstract = d[0].text
+                    find_div = 'abstract'#,{"class":"abstract"}
+                    d = find_abstract(baseurl2)
+                    abstract = d[0].text
 
-        markov_model = build_markov_model(markov_model, abstract , 1)
+                    markov_model = build_markov_model(markov_model, abstract , 1) 
+                except:
+                    continue
+        save_model_cache(str(order), markov_model, 365)
     return markov_model
 
 
-# In[11]:
+# In[73]:
 
 
-# Print a random sentence from our markov chain:
-#print (generate_random_text(markov_model))
-
-
-# In[15]:
-
-
-######################################################
 ###################################################### INTERFACE ######################################################
 
 def interface():
-    order = input("Order N of Markov Model (e.g. 1)")
+	order = input("Order N of Markov Model (e.g. 1)")
 
 ######################################################
 
@@ -293,7 +321,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def my_form():
-    return render_template('interface.html')
+	return render_template('interface.html')
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -304,4 +332,19 @@ def my_form_post():
 
 if __name__ == '__main__':
     app.run() # Runs the flask server in a special way that makes it nice to debug
+
+
+# In[7]:
+
+
+# Things to do:
+# 1. Cache markov model
+# 2. Give people the choice of what year they want
+# 3. Create a wait bar
+
+
+# In[ ]:
+
+
+
 
