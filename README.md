@@ -16,3 +16,7 @@ The concept of this pet project is to download all abstracts from the 2018 CVPR 
 Requires python 3.6 with Anaconda to run the Jupyter Notebook, and just python 3.6 to run the `.py` code. Install all packages in `requirements.txt`
 (Type `pip install -r requirements.txt` into your console if you have pip)  
 Tested on a Mac only but should work in Windows
+
+## Final Notes
+* Note that the generator is not that great at the moment. Since I'm just using a simple N-th order Markov Model with about 979 abstracts from CVPR (and I didn't adjust commas and periods yet), the model is still rough. However, this is just a fun little project for me to have fun with Markov models
+* Please don't use this incessantly. I need to introduce a delay into the requests still, so if you overuse the app you may (no promises) get kicked off the server of the CVPR website.
