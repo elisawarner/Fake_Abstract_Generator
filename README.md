@@ -4,7 +4,7 @@ Author: Elisa Warner
 Date: Dec 19, 2019
 
 ## Fake Abstract Generator
-The concept of this pet project is to download all abstracts from the 2018 CVPR conference and create a fake abstract based on the current abstracts. The generator uses a simple n-th order Markov Chain to generate results.
+The concept of this pet project is to download all abstracts from the 2015-2019 CVPR conferences and create a fake abstract based on the current abstracts. The generator uses a simple n-th order Markov Chain to generate results.
 
 ## How to Use:
 1. Use the Jupyter Notebook `fake_abstract.ipynb` or run the `fake_abstract.py` code.
@@ -20,3 +20,5 @@ Tested on a Mac only but should work in Windows
 ## Final Notes
 * Note that the generator is not that great at the moment. Since I'm just using a simple N-th order Markov Model with about 979 abstracts from CVPR (and I didn't adjust commas and periods yet), the model is still rough. However, this is just a fun little project for me to have fun with Markov models
 * Please don't use this incessantly. I need to introduce a delay into the requests still, so if you overuse the app you may (no promises) get kicked off the server of the CVPR website.
+* Included is a cached version of the website, so you don't have to hit the server (`cache_file.json`).
+* I also expanded caching to include the model for different orders of the model (`model.pkl`). If you delete this, the model will just have to be recreated on its own, which will take a little time.
