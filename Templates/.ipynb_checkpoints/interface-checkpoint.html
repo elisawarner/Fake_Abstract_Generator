@@ -1,21 +1,30 @@
-<!--CITE: Anand Doshi, section-week-14-->
 <!DOCTYPE html>
 <html>
-    <font face="Verdana">
+    <font face="Times">
     <head>
         <!--<meta charset="utf-8">-->
         <title>Fake Abstract Generator</title>
-        <h1 align='center'>Fake Abstract Generatorr</h1>
+        <h1 align='center'>Fake Abstract Generator</h1>
     </head>
     <body>
         <header>
             <h3 align='center'>Generate Abstract</h3>
-            <p align='center'>Order N of Markov Chain (e.g. 1):</p>
-            <form align='center' method="POST">
-                <input type="text" name="text">
+            <p align='left'>Order N of Markov Chain (e.g. 1):</p>
+            <form align='left' method="POST">
+            <p align='left'> Note that a higher Order N will result in less unique abstracts (that likely make more sense), while a lower order of N will result in more unique but more nonsensical abstracts. A good range would be [1,7]</p>
+            <input type="text" name="text">
+                
+            <p align='left'> Target word count:</p>
+                <input type="text" name="text2">
                 <input type="submit" value="Submit">
             </form>
         </header>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <p><font color='gray'> Created by elisawarner (https://github.com/elisawarner/Fake_Abstract_Generator)</font> </p>
     </body>
     </font>
 </html>
