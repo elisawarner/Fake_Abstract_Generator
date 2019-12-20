@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[49]:
+# In[1]:
 
 
 import requests
@@ -15,13 +15,6 @@ import matplotlib as mpl
 mpl.use('TkAgg')
 import matplotlib.pyplot as plt
 
-# database stuff
-import psycopg2
-import psycopg2.extras
-import sys
-import csv
-from psycopg2 import sql
-
 from bs4 import BeautifulSoup
 from datetime import datetime
 from flask import Flask, render_template, request
@@ -29,7 +22,7 @@ from flask_script import Manager
 from tqdm import tqdm
 
 
-# In[50]:
+# In[2]:
 
 
 ################ CACHING & DATA RETRIEVAL ###################
@@ -181,7 +174,7 @@ def find_abstract(baseurl):
 ######################## END CACHING #############################################
 
 
-# In[51]:
+# In[34]:
 
 
 import random
@@ -228,7 +221,7 @@ def get_next_word(current_word, markov_model):
         else:
             random_val -= markov_model[current_word][next_state]
     
-def generate_random_text(markov_model):
+def generate_random_text(markov_model, word_count, order):
     
     # We must start at the initial state of the model
     current_word = "*S*"
@@ -238,35 +231,31 @@ def generate_random_text(markov_model):
     sentence = list(current_tuple)
 
     # Until the model generates an end state, keep adding random words
-    while current_word != "*E*":
+    while current_word != "*E*" or count < word_count * .8: # true word count is less than 90% of target wc
         current_word = get_next_word(current_tuple, markov_model)
         
-        # Don't append the end state to our output
+        # Don't append the end state to our output        
         if current_word != "*E*":
             sentence.append(current_word)
+        else:
+            continue
+
             
         current_list = list(current_tuple)
         current_list.pop(0)
         current_list.append(current_word)
         current_tuple = tuple(current_list)
+        
+        count = len(sentence) * order
+        
+        if '.' in current_word and count > word_count:
+            current_word = "*E*" # stop early if you've already passed wc
 
     # Return the words with spaces between them
-    return ' '.join(sentence)
+    return [' '.join(sentence), count]
 
 
-# In[52]:
-
-
-baseurl = "http://openaccess.thecvf.com/"
-years = [str(2010 + x) for x in range(5,10)]
-result_dict = {}
-
-for year in years:
-    subscript = "CVPR%s.py" % year
-    result_dict[year] = search_cvpr(baseurl + subscript)
-
-
-# In[71]:
+# In[35]:
 
 
 def markov_wrapper(order):
@@ -304,7 +293,7 @@ def markov_wrapper(order):
     return markov_model
 
 
-# In[73]:
+# In[45]:
 
 
 ###################################################### INTERFACE ######################################################
@@ -326,9 +315,27 @@ def my_form():
 
 @app.route('/', methods=['GET', 'POST'])
 def my_form_post():
-    text = request.form['text']
-    order = int(text)
-    return render_template('results.html', order = order, fake_abstract = generate_random_text(markov_wrapper(order)))
+    order = int(request.form['text'])
+    word_count = int(request.form['text2'])
+
+    results = generate_random_text(markov_wrapper(order), word_count, order)
+    return render_template('results.html', order = order, fake_abstract = results[0], wc = results[1])
+
+
+# In[39]:
+
+
+baseurl = "http://openaccess.thecvf.com/"
+years = [str(2010 + x) for x in range(5,10)]
+result_dict = {}
+
+for year in years:
+    subscript = "CVPR%s.py" % year
+    result_dict[year] = search_cvpr(baseurl + subscript)
+
+
+# In[ ]:
+
 
 if __name__ == '__main__':
     app.run() # Runs the flask server in a special way that makes it nice to debug
@@ -338,9 +345,7 @@ if __name__ == '__main__':
 
 
 # Things to do:
-# 1. Cache markov model
-# 2. Give people the choice of what year they want
-# 3. Create a wait bar
+# 1. Give people the choice of what year they want
 
 
 # In[ ]:
